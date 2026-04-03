@@ -1,15 +1,16 @@
 export const defaultConfig = {
   shape: "Circle",
-  size: 10,
+  size: 8,
   randomizeSize: true,
   baseColor: "#00ffaa",
   rainbowMode: true,
-  delayFade: 0.02,
+  delayFade: 0.01,
   spread: 5,
-  speed: 2,
+  speed: 1,
   repetition: false,
-  inheritVelocity: false,
-  inheritFactor: 0.5,
+  spawnOnHold: false,
+  inheritVelocity: true,
+  inheritFactor: 0.1,
   deceleration: 0.95,
 };
 
