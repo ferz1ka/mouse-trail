@@ -1,4 +1,4 @@
-# Canvas Mouse Trail Playground ✨
+# Canvas Mouse Trail Playground
 
 A highly performant, visually dynamic interactive canvas playground that traces your mouse actions and generates a customizable particle system trail. 
 
