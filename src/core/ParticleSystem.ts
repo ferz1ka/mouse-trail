@@ -11,6 +11,7 @@ export class ParticleSystem {
   mouseVY: number = 0;
   lastTime: number = performance.now();
   isMouseMoving: boolean = false;
+  isMouseDown: boolean = false;
   hue: number = 0;
   private animationFrameId: number = 0;
   private resizeObserver: ResizeObserver;
@@ -24,6 +25,21 @@ export class ParticleSystem {
     this.resizeObserver = new ResizeObserver(() => this.resize());
     this.resizeObserver.observe(this.canvas);
     
+    this.canvas.addEventListener('mousedown', (e) => {
+      if (e.button === 0) {
+        this.isMouseDown = true;
+        if (!config.spawnOnHold || this.isMouseDown) {
+           this.spawnParticles();
+        }
+      }
+    });
+
+    this.canvas.addEventListener('mouseup', (e) => {
+      if (e.button === 0) {
+        this.isMouseDown = false;
+      }
+    });
+
     this.canvas.addEventListener('mousemove', (e) => {
       const now = performance.now();
       const dt = Math.max(1, now - this.lastTime);
@@ -41,11 +57,14 @@ export class ParticleSystem {
       this.lastTime = now;
       
       this.isMouseMoving = true;
-      this.spawnParticles();
+      if (!config.spawnOnHold || this.isMouseDown) {
+        this.spawnParticles();
+      }
     });
 
     this.canvas.addEventListener('mouseleave', () => {
       this.isMouseMoving = false;
+      this.isMouseDown = false;
       this.mouseVX = 0;
       this.mouseVY = 0;
     });
@@ -89,7 +108,9 @@ export class ParticleSystem {
     }
 
     if (config.repetition && !this.isMouseMoving) {
-      this.spawnParticles();
+      if (!config.spawnOnHold || this.isMouseDown) {
+        this.spawnParticles();
+      }
     }
 
     for (let i = this.particles.length - 1; i >= 0; i--) {
