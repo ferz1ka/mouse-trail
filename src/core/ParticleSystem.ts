@@ -1,5 +1,5 @@
-import { Particle } from './Particle';
-import { config } from './Config';
+import { Particle } from "./Particle";
+import { config } from "./Config";
 
 export class ParticleSystem {
   particles: Particle[] = [];
@@ -15,70 +15,118 @@ export class ParticleSystem {
   hue: number = 0;
   private animationFrameId: number = 0;
   private resizeObserver: ResizeObserver;
+  private moveTimeout?: ReturnType<typeof setTimeout>;
 
   constructor(canvasId: string) {
     this.canvas = document.getElementById(canvasId) as HTMLCanvasElement;
-    this.ctx = this.canvas.getContext('2d')!;
-    
+    this.ctx = this.canvas.getContext("2d")!;
+
     this.resize();
-    
+
     this.resizeObserver = new ResizeObserver(() => this.resize());
     this.resizeObserver.observe(this.canvas);
-    
-    this.canvas.addEventListener('mousedown', (e) => {
+
+    this.canvas.addEventListener("mousedown", (e) => {
       if (e.button === 0) {
         this.isMouseDown = true;
-        if (!config.spawnOnHold || this.isMouseDown) {
-           this.spawnParticles();
-        }
+        this.handleMove(e.offsetX, e.offsetY);
       }
     });
 
-    this.canvas.addEventListener('mouseup', (e) => {
+    this.canvas.addEventListener("mousemove", (e) => {
+      this.handleMove(e.offsetX, e.offsetY);
+    });
+
+    this.canvas.addEventListener("mouseup", (e) => {
       if (e.button === 0) {
         this.isMouseDown = false;
       }
     });
 
-    this.canvas.addEventListener('mousemove', (e) => {
-      const now = performance.now();
-      const dt = Math.max(1, now - this.lastTime);
-      
-      if (this.mouseX === -1000) {
-        this.mouseX = e.offsetX;
-        this.mouseY = e.offsetY;
-      }
-      
-      this.mouseVX = ((e.offsetX - this.mouseX) / dt) * 16;
-      this.mouseVY = ((e.offsetY - this.mouseY) / dt) * 16;
-
-      this.mouseX = e.offsetX;
-      this.mouseY = e.offsetY;
-      this.lastTime = now;
-      
-      this.isMouseMoving = true;
-      if (!config.spawnOnHold || this.isMouseDown) {
-        this.spawnParticles();
-      }
+    this.canvas.addEventListener("mouseleave", () => {
+      this.handleLeave();
     });
 
-    this.canvas.addEventListener('mouseleave', () => {
-      this.isMouseMoving = false;
+    this.canvas.addEventListener(
+      "touchstart",
+      (e) => {
+        e.preventDefault();
+        this.isMouseDown = true;
+        const pos = this.getTouchPos(e);
+        this.handleMove(pos.x, pos.y);
+      },
+      { passive: false },
+    );
+
+    this.canvas.addEventListener(
+      "touchmove",
+      (e) => {
+        e.preventDefault();
+        const pos = this.getTouchPos(e);
+        this.handleMove(pos.x, pos.y);
+      },
+      { passive: false },
+    );
+
+    this.canvas.addEventListener(
+      "touchend",
+      (e) => {
+        e.preventDefault();
+        this.isMouseDown = false;
+        this.handleLeave();
+      },
+      { passive: false },
+    );
+
+    this.canvas.addEventListener("touchcancel", () => {
       this.isMouseDown = false;
+      this.handleLeave();
+    });
+  }
+
+  getTouchPos(e: TouchEvent) {
+    const rect = this.canvas.getBoundingClientRect();
+    const touch = e.touches[0];
+    return {
+      x: touch.clientX - rect.left,
+      y: touch.clientY - rect.top,
+    };
+  }
+
+  handleMove(x: number, y: number) {
+    const now = performance.now();
+    const dt = Math.max(1, now - this.lastTime);
+
+    if (this.mouseX === -1000) {
+      this.mouseX = x;
+      this.mouseY = y;
+    }
+
+    this.mouseVX = ((x - this.mouseX) / dt) * 16;
+    this.mouseVY = ((y - this.mouseY) / dt) * 16;
+
+    this.mouseX = x;
+    this.mouseY = y;
+    this.lastTime = now;
+
+    this.isMouseMoving = true;
+    if (!config.spawnOnHold || this.isMouseDown) {
+      this.spawnParticles();
+    }
+
+    if (this.moveTimeout) clearTimeout(this.moveTimeout);
+    this.moveTimeout = setTimeout(() => {
+      this.isMouseMoving = false;
       this.mouseVX = 0;
       this.mouseVY = 0;
-    });
+    }, 50);
+  }
 
-    // Handle mouse stop
-    let timeout: ReturnType<typeof setTimeout>;
-    this.canvas.addEventListener('mousemove', () => {
-      clearTimeout(timeout);
-      timeout = setTimeout(() => {
-        this.isMouseMoving = false;
-        this.mouseVX = 0;
-        this.mouseVY = 0;
-      }, 50);
-    });
+  handleLeave() {
+    this.isMouseMoving = false;
+    this.isMouseDown = false;
+    this.mouseVX = 0;
+    this.mouseVY = 0;
   }
 
   resize() {
@@ -94,11 +142,13 @@ export class ParticleSystem {
   }
 
   spawnParticles() {
-    const count = 2; // Can be configurable
+    const count = 2;
     for (let i = 0; i < count; i++) {
-        const vx = this.isMouseMoving ? this.mouseVX : 0;
-        const vy = this.isMouseMoving ? this.mouseVY : 0;
-      this.particles.push(new Particle(this.mouseX, this.mouseY, this.getColor(), vx, vy));
+      const vx = this.isMouseMoving ? this.mouseVX : 0;
+      const vy = this.isMouseMoving ? this.mouseVY : 0;
+      this.particles.push(
+        new Particle(this.mouseX, this.mouseY, this.getColor(), vx, vy),
+      );
     }
   }
 
@@ -133,7 +183,7 @@ export class ParticleSystem {
     this.update();
     this.draw();
     this.animationFrameId = requestAnimationFrame(this.loop);
-  }
+  };
 
   start() {
     this.loop();
